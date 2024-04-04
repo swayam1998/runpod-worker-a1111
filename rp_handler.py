@@ -183,13 +183,6 @@ def create_supabase_client():
     return supabase
 
 def upload_to_supabase(image_data_base64, userId, genId, fileName):
-    """
-    Asynchronously uploads a base64 encoded image to Supabase storage.
-
-    :param image_data_base64: The base64 encoded string of the image to be uploaded.
-    :param fileName: The name of the file in the storage.
-    :return: The URL of the uploaded image.
-    """
     supabase = create_supabase_client()
 
     # Decode the base64 string into bytes
