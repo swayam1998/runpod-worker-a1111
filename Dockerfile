@@ -41,12 +41,14 @@ RUN apt update && \
 RUN ln -s /usr/bin/python3.10 /usr/bin/python
 
 # Install Worker dependencies
-RUN pip install requests runpod huggingface_hub
+RUN pip install requests runpod huggingface_hub supabase
 
 # Add RunPod Handler and Docker container start script
-COPY start.sh rp_handler.py ./
-COPY schemas /schemas
+# COPY start.sh rp_handler.py ./
+# COPY schemas /schemas
+
+COPY start.sh /workspace/
 
 # Start the container
-RUN chmod +x /start.sh
-ENTRYPOINT /start.sh
+RUN chmod +x /workspace/start.sh
+ENTRYPOINT /workspace/start.sh

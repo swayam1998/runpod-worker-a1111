@@ -16,6 +16,7 @@ from schemas.sync import SYNC_SCHEMA
 from schemas.download import DOWNLOAD_SCHEMA
 
 import base64
+from io import BytesIO
 from supabase import create_client
 from urllib.parse import urlparse, parse_qs
 
@@ -184,39 +185,32 @@ def create_supabase_client():
 
 def upload_to_supabase(image_data_base64, userId, genId, fileName):
     """
-    Asynchronously uploads a base64 encoded image to Supabase storage.
+    Uploads a base64 encoded image to Supabase storage.
 
     :param image_data_base64: The base64 encoded string of the image to be uploaded.
-    :param fileName: The name of the file in the storage.
+    :param file_name: The name of the file in the storage.
     :return: The URL of the uploaded image.
     """
     supabase = create_supabase_client()
 
     # Decode the base64 string into bytes
     image_data = base64.b64decode(image_data_base64)
+    image_stream = BytesIO(image_data)
 
     # Define the path and bucket
-    bucket_name = "proprofiles"
+    bucket_name = os.environ.get("SUPABASE_STORAGE_BUCKET")
     file_path = f'v1/generations/generatedImages/{userId}/{genId}/{fileName}'
-    print(file_path)
 
-    # Upload the image synchronously
-    upload_response = supabase.storage.from_(bucket_name).upload(file_path, image_data, {"content-type": "image/png"})
-    logger.info(f"upload_response: {upload_response.json()}")
+    # Upload the image
+    upload_response = supabase.storage().from_(bucket_name).upload(file_path, image_stream)
+    logger.info(f"upload_response: {upload_response}")
 
-    # Assuming upload_response is an object with a 'status_code' and a method to get json like 'json()'
-    if upload_response.status_code == 200:
-        response_data = upload_response.json()  # Get the JSON content of the response
-        if 'error' in response_data:
-            logger.error(f"Failed to upload image: {response_data['error']['message']}")
-            return None
-        else:
-            # Construct the URL of the uploaded image
-            public_url = file_path
-            return public_url
+    if upload_response.get('error') is None:
+        # Construct the URL of the uploaded image
+        public_url = f"v1/generations/generatedImages/{userId}/{genId}/{fileName}"
+        return public_url
     else:
-        logger.error("Failed to upload image due to HTTP error.")
-        return None
+        logger.error(f"Failed to upload image: {upload_response['error']['message']}")
 
 
 
@@ -224,6 +218,7 @@ def upload_to_supabase(image_data_base64, userId, genId, fileName):
 #                                RunPod Handler                                #
 # ---------------------------------------------------------------------------- #
 def handler(job):
+    logger.info(f'Job:{job}')
     validated_input = validate_input(job)
 
     if 'errors' in validated_input:
@@ -275,6 +270,9 @@ def handler(job):
                 genId = query_params.get('genId', [None])[0]
                 userId = query_params.get('userId', [None])[0]
 
+                print("genId:", genId)
+                print("userId:", userId)
+
                 if genId and userId:
                     # Get the generated images from response json
                     data = response.json()
@@ -284,20 +282,15 @@ def handler(job):
                     for index, image_base64 in enumerate(images):
                         # Assuming the image is in base64 format
                         fileName = f"{index}.png"
-                        logger.info(fileName)
+                        print(fileName)
 
                         # Upload each image to Supabase storage
                         upload_url = upload_to_supabase(image_base64, userId, genId, fileName)
                         upload_urls.append(upload_url)
                     
-                    # Replace the 'images' in the response with 'upload_urls'
-                    logger.info(upload_urls)
-                    data['images'] = upload_urls
-        
-                    # Return the modified response
                     return {
                         'error': None,
-                        'output': data,
+                        'output': upload_urls,
                         'status': 'complete'
                     }
 

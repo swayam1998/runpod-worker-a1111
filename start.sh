@@ -38,4 +38,4 @@ else
 fi
 
 echo "Starting RunPod Handler"
-python3 -u /rp_handler.py
+python3 -u /workspace/rp_a1111/rp_handler.py
