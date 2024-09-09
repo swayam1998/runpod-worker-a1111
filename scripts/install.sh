@@ -28,7 +28,7 @@ echo "Installing xformers"
 pip3 install --no-cache-dir xformers==0.0.23.post1 --index-url https://download.pytorch.org/whl/cu118
 
 echo "Installing A1111 Web UI"
-wget https://raw.githubusercontent.com/ashleykleynhans/runpod-worker-a1111/main/install-automatic.py
+wget https://raw.githubusercontent.com/swayam1998/runpod-worker-a1111/main/install-automatic.py
 python3 -m install-automatic --skip-torch-cuda-test
 
 echo "Cloning ControlNet extension repo"
@@ -117,9 +117,9 @@ mkdir -p /workspace/logs
 echo "Installing config files"
 cd /workspace/stable-diffusion-webui
 rm webui-user.sh config.json ui-config.json
-wget https://raw.githubusercontent.com/ashleykleynhans/runpod-worker-a1111/main/webui-user.sh
-wget https://raw.githubusercontent.com/ashleykleynhans/runpod-worker-a1111/main/config.json
-wget https://raw.githubusercontent.com/ashleykleynhans/runpod-worker-a1111/main/ui-config.json
+wget https://raw.githubusercontent.com/swayam1998/runpod-worker-a1111/main/webui-user.sh
+wget https://raw.githubusercontent.com/swayam1998/runpod-worker-a1111/main/config.json
+wget https://raw.githubusercontent.com/swayam1998/runpod-worker-a1111/main/ui-config.json
 
 echo "Starting A1111 Web UI"
 deactivate
