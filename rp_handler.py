@@ -269,22 +269,24 @@ def handler(job):
         elif method == 'POST':
             response = send_post_request(endpoint, payload, job['id'])
 
+            response_json = response.json()
+
             # Upload images only if environment variables are present
-            image_urls = upload_images_if_exists(job, response)
+            image_urls = upload_images_if_exists(job, response_json)
 
             # Optionally, you can return or log the uploaded image URLs
             if image_urls:
-                response['s3_image_urls'] = image_urls
+                response_json['s3_image_urls'] = image_urls
 
         if response.status_code == 200:
-            return response.json()
+            return response_json
         else:
             logger.error(f'HTTP Status code: {response.status_code}', job['id'])
-            logger.error(f'Response: {response.json()}', job['id'])
+            logger.error(f'Response: {response_json}', job['id'])
 
             return {
                 'error': f'A1111 status code: {response.status_code}',
-                'output': response.json(),
+                'output': response_json,
                 'refresh_worker': True
             }
     except Exception as e:
