@@ -62,7 +62,7 @@ def upload_images_if_exists(job, response_json):
                     
                     if image_path:
                         # Upload the image file to S3
-                        image_url = rp_upload.upload_image(unique_filename, image_path)
+                        image_url = rp_upload.upload_image(job["id"], image_path)
                         image_urls.append(image_url)
 
                         # Clean up the temporary file
