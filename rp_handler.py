@@ -14,6 +14,9 @@ from schemas.txt2img import TXT2IMG_SCHEMA
 from schemas.interrogate import INTERROGATE_SCHEMA
 from schemas.sync import SYNC_SCHEMA
 from schemas.download import DOWNLOAD_SCHEMA
+from runpod.serverless.utils import rp_upload
+import uuid
+import base64
 
 BASE_URI = 'http://127.0.0.1:3000'
 TIMEOUT = 600
@@ -24,6 +27,57 @@ retries = Retry(total=10, backoff_factor=0.1, status_forcelist=[502, 503, 504])
 session.mount('http://', HTTPAdapter(max_retries=retries))
 logger = RunPodLogger()
 
+# Check if the required environment variables are set
+required_env_vars = ['BUCKET_ENDPOINT_URL', 'BUCKET_ACCESS_KEY_ID', 'BUCKET_SECRET_ACCESS_KEY']
+
+def are_env_vars_present():
+    return all(os.getenv(var) for var in required_env_vars)
+
+# Function to decode base64 image and save it temporarily
+def save_base64_image(image_base64, file_name):
+    try:
+        # Decode the base64 image
+        image_data = base64.b64decode(image_base64)
+        # Save the decoded image to a temporary file
+        with open(file_name, 'wb') as f:
+            f.write(image_data)
+        return file_name
+    except Exception as e:
+        logger.error(f'Failed to decode and save base64 image: {e}')
+        return None
+
+# Upload image if the response contains images and environment variables are set
+def upload_images_if_exists(job, response_json):
+    image_urls = []
+    if are_env_vars_present():
+        if 'images' in response_json and isinstance(response_json['images'], list):
+            for image_base64 in response_json['images']:
+                try:
+
+                    # Generate a unique filename for the image
+                    unique_filename = f"{uuid.uuid4()}.png"
+
+                    # Save the base64 image temporarily
+                    image_path = save_base64_image(image_base64, unique_filename)
+                    
+                    if image_path:
+                        # Upload the image file to S3
+                        image_url = rp_upload.upload_image(unique_filename, image_path)
+                        image_urls.append(image_url)
+
+                        # Clean up the temporary file
+                        os.remove(image_path)
+                    else:
+                        logger.error(f'Failed to save base64 image for job: {job["id"]}')
+                except Exception as e:
+                    logger.error(f'Failed to upload image for job: {job["id"]}: {e}')
+                    continue
+         # Remove 'images' from response_json if images were uploaded successfully
+        if image_urls:
+            del response_json['images']
+    else:
+        logger.info('Environment variables for S3 upload are not set, skipping upload.')
+    return image_urls
 
 # ---------------------------------------------------------------------------- #
 #                               Utility Functions                              #
@@ -214,6 +268,13 @@ def handler(job):
             response = send_get_request(endpoint)
         elif method == 'POST':
             response = send_post_request(endpoint, payload, job['id'])
+
+            # Upload images only if environment variables are present
+            image_urls = upload_images_if_exists(job, response)
+
+            # Optionally, you can return or log the uploaded image URLs
+            if image_urls:
+                response['s3_image_urls'] = image_urls
 
         if response.status_code == 200:
             return response.json()
