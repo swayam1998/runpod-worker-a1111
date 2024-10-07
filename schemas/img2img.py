@@ -312,5 +312,10 @@ IMG2IMG_SCHEMA = {
         'type': dict,
         'required': False,
         'default': {}
+    },
+    's3_upload': {
+        'type': bool,
+        'required': False,
+        'default': False
     }
 }

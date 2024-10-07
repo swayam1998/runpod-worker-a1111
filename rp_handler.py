@@ -271,12 +271,14 @@ def handler(job):
 
             response_json = response.json()
 
-            # Upload images only if environment variables are present
-            image_urls = upload_images_if_exists(job, response_json)
+            # Check if s3_response is true before uploading images
+            if payload.get('s3_upload', False):
+                # Upload images only if environment variables are present
+                image_urls = upload_images_if_exists(job, response_json)
 
-            # Optionally, you can return or log the uploaded image URLs
-            if image_urls:
-                response_json['s3_image_urls'] = image_urls
+                # Optionally, you can return or log the uploaded image URLs
+                if image_urls:
+                    response_json['s3_image_urls'] = image_urls
 
         if response.status_code == 200:
             return response_json
