@@ -272,7 +272,7 @@ def handler(job):
             response_json = response.json()
 
             # Check if s3_response is true before uploading images
-            if payload.get('s3_upload', False):
+            if payload.get('s3_upload', True):
                 # Upload images only if environment variables are present
                 image_urls = upload_images_if_exists(job, response_json)
 

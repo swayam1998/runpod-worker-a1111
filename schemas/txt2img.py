@@ -306,6 +306,6 @@ TXT2IMG_SCHEMA = {
     's3_upload': {
         'type': bool,
         'required': False,
-        'default': False
+        'default': True
     }
 }
